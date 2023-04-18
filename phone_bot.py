@@ -3,7 +3,7 @@ from collections import UserDict
 from datetime import datetime
 from functools import wraps
 from itertools import islice
-
+import pickle
 
 class Field:
     def __init__(self, value):
@@ -100,8 +100,17 @@ class AddressBook(UserDict):
                               start_iterate + records_count))
             start_iterate += records_count
 
+    def save_to_bin(self, path="AddressBook.bin"):
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
 
-contacts = AddressBook()
+    @staticmethod
+    def load_from_bin(path="AddressBook.bin"):
+        with open(path, "rb") as f:
+            return pickle.load(f)
+
+
+contacts = AddressBook.load_from_bin()
 
 
 def input_error(func):
@@ -131,10 +140,6 @@ def hello(*args):
 @input_error
 def add_func(*args):
     obj = args[0].split()
-    if len(obj) < 2 or len(obj) > 3:
-        raise ValueError(
-            "Invalid input format. Expected 'Name Phone [Birthday]'")
-
     name = Name(obj[0])
     phone = Phone(obj[1])
     record = Record(name)
@@ -159,15 +164,24 @@ def change_contacts_dict(*args):
     return f'You have changed the number to this one: {phone} in the contact with the name: {name}'
 
 
-@input_error
 def phone_func(*args):
-    name = args[0]
-    if name in contacts.data:
-        for key in contacts.data.keys():
-            record = contacts.data[key]
-            if name == key:
-                return f"{name}: {', '.join(str(phone) for phone in record.phones)}"
-    raise KeyError
+    if len(args) < 1:
+        return "Please provide a search query"
+
+    value = args[0].lower()
+
+    result = ''
+    for name, record in contacts.data.items():
+        phones = [str(phone) for phone in record.phones]
+        phone_str = ', '.join(phones)
+
+        if value in name.lower() or any(value in phone.lower() for phone in phones):
+            contact = f'\n{name.capitalize()}: {phone_str}'
+            result += contact
+
+    if not result:
+        return f'\nNo contact found with the query: {value}\n'
+    return result
 
 
 def show_all_func(*args):
@@ -184,6 +198,10 @@ def show_all_func(*args):
 def no_command(*args):
     return "Unknown command, try again."
 
+def exit(*args):
+    contacts.save_to_bin()
+    print("Good bye!")
+
 
 OPERATION = {
     'hello': hello,
@@ -191,7 +209,7 @@ OPERATION = {
     'change': change_contacts_dict,
     'phone': phone_func,
     'show all': show_all_func,
-    'help': help
+    'help': help,
 }
 
 
@@ -206,11 +224,12 @@ def handle_command(user_input):
 
 
 def main():
+
     print(help())
     while True:
         user_input = input("Write what u wont from bot >>> ").lower()
         if user_input in END_WORDS:
-            print("Good bye!")
+            exit()
             break
         command, data = handle_command(user_input)
         print(command(data))
