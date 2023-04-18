@@ -16,8 +16,7 @@ class Field:
 class Record:
     def __init__(self, name, phone=None, b_date=None):
         self.name = name
-        self.phone = phone
-        self.phones = [phone] if phone else []
+        self.phones = []
         self.b_date = b_date
 
     def add_phone(self, phone):
