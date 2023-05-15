@@ -4,6 +4,7 @@ from datetime import datetime
 from functools import wraps
 from itertools import islice
 import pickle
+import pathlib
 
 class Field:
     def __init__(self, value):
@@ -74,7 +75,7 @@ class Phone(Field):
 
     @value.setter
     def value(self, phone):
-        if not re.match(r"^(?:\+380|0)(?:39|67|68|96|97|98|50|66|95|99|63|73| 93)\d{7}$", phone):
+        if not re.match(r"^(?:\+380|0)(?:39|67|68|96|97|98|50|66|95|99|63|73|93)\d{7}$", phone):
             raise ValueError(
                 "Phone must start with +380 or 0 and has 9 nums after")
         self.__value = phone
@@ -105,9 +106,11 @@ class AddressBook(UserDict):
 
     @staticmethod
     def load_from_bin(path="AddressBook.bin"):
-        with open(path, "rb") as f:
-            return pickle.load(f)
-
+        if pathlib.Path(path).exists():
+            with open(path, "rb") as f:
+                return pickle.load(f)
+        else:
+            return AddressBook()
 
 contacts = AddressBook.load_from_bin()
 
